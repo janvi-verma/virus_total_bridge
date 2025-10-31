@@ -1,24 +1,20 @@
+import fetch from "node-fetch";
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Use POST request" });
+  const url = req.query.url;
+  if (!url) {
+    return res.status(400).json({ error: "URL parameter missing" });
   }
 
-  const { url } = await req.json();
-  const apiKey = process.env.VT_API_KEY; // we’ll add this key later in Vercel
+  const response = await fetch("https://www.virustotal.com/api/v3/urls", {
+    method: "POST",
+    headers: {
+      "x-apikey": process.env.VT_API_KEY,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ url }),
+  });
 
-  try {
-    const response = await fetch("https://www.virustotal.com/api/v3/urls", {
-      method: "POST",
-      headers: {
-        "x-apikey": apiKey,
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: new URLSearchParams({ url }),
-    });
-
-    const data = await response.json();
-    return res.status(200).json(data);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
+  const result = await response.json();
+  res.status(200).json(result);
 }
